@@ -1,0 +1,5 @@
+# avoid env
+.env
+
+# vscode
+.vscode

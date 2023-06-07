@@ -2,11 +2,6 @@ const sessionNeo4J = require('../config/db')
 const asyncHandler = require('express-async-handler')
 const md5 = require('md5')
 
-// const findAllUsers = asyncHandler(async (req, res) => {
-//     const result = await sessionNeo4J.run(`Match (u:User) return u`)
-//     res.status(200).json(result.records.map(i=>i.get('u').properties))
-// })
-
 // @desc    Get All Existing users (Only user_name and bio)
 // @route   GET /api/users
 // @access  Public
@@ -28,7 +23,7 @@ const getUser = asyncHandler(async (req, res) => {
     `)
 
     if (result.records.length === 0) {
-        res.status(400).json({error_message: 'User not find'})
+        return res.status(400).json({error_message: 'User not find'})        
     }
 
     const user = {
@@ -41,14 +36,14 @@ const getUser = asyncHandler(async (req, res) => {
 
 
 // @desc   Create new user
-// @route  POST /api/users/create
+// @route  POST /api/users
 // @access Public
 const createUser = asyncHandler(async (req, res) => {
     const { user_name, password, bio, sex, age } = req.body
 
     // Verify if data exist
     if (!user_name || !password) {
-        res.status(400).json({error_message: 'Please add all the fields'})
+        return res.status(400).json({error_message: 'Please add all the fields'})
     }
 
     // Checking if user exits in the database
@@ -58,8 +53,7 @@ const createUser = asyncHandler(async (req, res) => {
     `)
 
     if (countUser.records[0].get('count').toNumber() === 1) {
-        res.status(400).json({error_message: 'The username is invalid'})
-        return
+        return res.status(400).json({error_message: 'The username is invalid'})
     }
 
     // Encryt Password
@@ -87,55 +81,70 @@ const createUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
     const { user_name, password } = req.body
 
-    // const user = await User.findOne({ user_name })
-    // if (user && (await md5(password)) === user.password) {
-    //     res.json({
-    //         _id: user.id,
-    //         user_name: user.user_name,
-    //         posts: user.posts,
-    //         profile_img: user.profile_img,
-    //     })
-    // } else {
-    //     res.status(400).json({error_message: ''})
-    // }
+    const result = await sessionNeo4J.run(`
+        MATCH (u:User {user_name: '${user_name}'})
+        RETURN u
+    `)
+
+    const user_result = result.records.map(i=>i.get('u').properties)
+
+    if(user_result.length === 0){
+        return res.status(400).json({error_message: 'Invalid username/password'})
+    }
+
+    const user = user_result[0] // Obtener el primer y único registro que existe
+    
+    if (user && (await md5(password)) === user.password) {
+        return res.json({
+            _id: user._id,
+            user_name: user.user_name,
+            bio: user.bio
+        })
+    }
+    
+    res.status(400).json({error_message: 'Invalid username/password'})
 })
 
 // @desc    Update user
 // @route   PUT /api/users/:id
 // @access  Private
 const updateUser = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.params.id)
-
-    if (!user) {
-        res.status(400).json({error_message: ''})
+    const { user_name, bio } = req.body;
+    
+    const result = await sessionNeo4J.run(`
+        MATCH (u:User {_id: '${req.params.id}'}) 
+        SET u.user_name = '${user_name}', 
+            u.bio = '${bio}' 
+        RETURN u
+    `)
+  
+    if (result.records.length === 0) {
+        return res.status(404).json({ error: 'User not found' })
     }
 
-    // const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
-    //     new: true,
-    // })
-
-    // res.status(200).json({
-    //     _id: updatedUser.id,
-    //     user_name: updatedUser.user_name,
-    //     real_info: updateUser.real_info,
-    //     sex: updateUser.sex,
-    //     birthday: updateUser.birthday,
-    // })
+    const updatedUser = result.records[0].get('u').properties
+    
+    res.json({
+        _id: updatedUser._id,
+        user_name: updatedUser.user_name,
+        bio: updatedUser.bio
+    })
 })
 
 // @desc    Delete user
 // @route   DELETE /api/users/:id
 // @access  Private
 const deleteUser = asyncHandler(async (req, res) => {
-    // const user = await User.findById(req.params.id)
+    const result = await sessionNeo4J.run(`
+        MATCH (u:User {_id: '${req.params.id}'}) 
+        DELETE u
+    `)
 
-    // if (!user) {
-    //     res.status(400).json({error_message: ''})
-    // }
+    if (result.summary.counters.nodesDeleted === 0) {
+        return res.status(404).json({ error: 'User not found' });
+    }
 
-    // await user.remove()
-
-    res.status(200).json({ messsge: 'Usuario borrado' })
+    res.status(204).json({ messsge: 'Usuario borrado' })
 })
 
 module.exports = {
