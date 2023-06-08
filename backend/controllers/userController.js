@@ -23,7 +23,7 @@ const getUser = asyncHandler(async (req, res) => {
     `)
 
     if (result.records.length === 0) {
-        return res.status(400).json({error_message: 'User not find'})        
+        return res.status(400).json({error: 'User not find'})        
     }
 
     const user = {
@@ -43,7 +43,7 @@ const createUser = asyncHandler(async (req, res) => {
 
     // Verify if data exist
     if (!user_name || !password) {
-        return res.status(400).json({error_message: 'Please add all the fields'})
+        return res.status(400).json({error: 'Please add all the fields'})
     }
 
     // Checking if user exits in the database
@@ -53,7 +53,7 @@ const createUser = asyncHandler(async (req, res) => {
     `)
 
     if (countUser.records[0].get('count').toNumber() === 1) {
-        return res.status(400).json({error_message: 'The username is invalid'})
+        return res.status(400).json({error: 'The username is invalid'})
     }
 
     // Encryt Password
@@ -89,7 +89,7 @@ const loginUser = asyncHandler(async (req, res) => {
     const user_result = result.records.map(i=>i.get('u').properties)
 
     if(user_result.length === 0){
-        return res.status(400).json({error_message: 'Invalid username/password'})
+        return res.status(400).json({error: 'Invalid username/password'})
     }
 
     const user = user_result[0] // Obtener el primer y único registro que existe
@@ -102,7 +102,7 @@ const loginUser = asyncHandler(async (req, res) => {
         })
     }
     
-    res.status(400).json({error_message: 'Invalid username/password'})
+    res.status(400).json({error: 'Invalid username/password'})
 })
 
 // @desc    Update user
@@ -147,11 +147,44 @@ const deleteUser = asyncHandler(async (req, res) => {
     res.status(204).json({ messsge: 'Usuario borrado' })
 })
 
+// @desc   Follow an User
+// @route  POST /api/users/follow
+// @access Public
+const followUser = asyncHandler(async(req, res) => {
+    const { id_user, id_user_to_follow } = req.body
+
+    // Verify if data exist
+    if (!id_user || !id_user_to_follow) {
+        return res.status(400).json({error: 'Please add all the fields'})
+    }
+
+    // Verify if the id the are don't the same
+    if (id_user === id_user_to_follow){
+        return res.status(400).json({error: 'Is not allowed the same id'})
+    }
+
+    const query = `
+        MATCH (u1:User {_id: '${id_user}'}), (u2:User {_id: '${id_user_to_follow}'})
+        MERGE (u1)-[:FOLLOW]->(u2)    
+    `
+
+    // Run query
+    sessionNeo4J.run(query)
+        .then(result => {
+            res.status(200).json({ message: 'Follow relationship created' });
+        })
+        .catch(error => {
+            console.error('Error creating follow relationship:', error);
+            res.status(500).json({ error: 'An error occurred' });
+        });
+})
+
 module.exports = {
     findAllUsers,
     getUser,
     createUser,
     loginUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    followUser
 }

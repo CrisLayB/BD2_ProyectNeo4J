@@ -1,8 +1,3 @@
-// import { Router } from "express"
-// import userController from "../controllers/userController"
-
-// const user = Router()
-
 const express = require('express')
 const router = express.Router()
 
@@ -12,7 +7,8 @@ const {
     createUser,
     loginUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    followUser
 } = require('../controllers/userController')
 
 // Define Routers for User
@@ -22,5 +18,6 @@ router.post('/', createUser)
 router.post('/login/', loginUser)
 router.put('/:id', updateUser)
 router.delete('/:id', deleteUser)
+router.post('/follow/', followUser)
 
 module.exports = router

@@ -15,6 +15,7 @@ app.use(express.urlencoded({extended:true}))
 
 // Set All Avaliable Routes
 app.use('/api/users', require('./routes/userRouter'))
+app.use('/api/twits', require('./routes/twitRouter'))
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}`)
