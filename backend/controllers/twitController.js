@@ -15,14 +15,17 @@ const showRecenTwits = asyncHandler(async (req, res) => {
         const user = record.get('u').properties
         const twit = record.get('t').properties
 
+        const date = twit.date
+        const dateFormated = `${date.year}-${date.month}-${date.day} TIME: ${date.hour}:${date.minute}`
+        
         const showTwit = {
             _id: twit._id,
             user_name: user.user_name,
             title: twit.title,
             content: twit.content,
-            date: twit.date
+            date: dateFormated
         }
-        
+
         return showTwit
     }))
 })
@@ -67,7 +70,7 @@ const createNewTwit = asyncHandler(async (req, res) => {
 })
 
 // @desc   Create relation "like" for User and Twit
-// @route  POST /api/twits/like/
+// @route  POST /api/twits/action/like/
 // @access Public
 const likedTwit = asyncHandler(async (req, res) => {
     const { id_user, id_twit } = req.body
@@ -81,19 +84,30 @@ const likedTwit = asyncHandler(async (req, res) => {
         MERGE (u)-[:LIKES]->(t)
     `
 
+    const notificationQuery = `
+        MATCH (liker:User {_id: "${id_user}"}), (twit:Twit {_id: "${id_twit}"}), (owner:User)-[:POSTED]->(twit)
+        MERGE (notification:Notification {_id: apoc.create.uuid(), content: liker.user_name + " le dio like a tu publicacion", checked: false})
+        WITH notification
+        MERGE (notification)-[:NOTIFIED_TO]->(owner)
+        RETURN notification
+    `
+
     // Run query
     sessionNeo4J.run(query)
+        .then(() => {
+            return sessionNeo4J.run(notificationQuery);
+        })
         .then(result => {
-            res.status(200).json({ message: 'Follow relationship created' });
+            res.status(200).json({ message: 'Twit Like' });
         })
         .catch(error => {
-            console.error('Error creating follow relationship:', error);
+            console.error('Error creating like and notification:', error);
             res.status(500).json({ error: 'An error occurred' });
-        });
+        })
 })
 
 // @desc   Create relation "comment" for User and Twit
-// @route  POST /api/twits/comment/
+// @route  POST /api/twits/action/comment/
 // @access Public
 const commentTwit = asyncHandler(async (req, res) => {
     const { id_user, id_twit, content } = req.body
@@ -106,22 +120,36 @@ const commentTwit = asyncHandler(async (req, res) => {
         return res.status(400).json({error: 'Please add content for the commetn'})
     }
     
+    const date = new Date()
+    const dateString = date.toISOString()
+
     const query = `
         MATCH (u:User {_id: "${id_user}"}), (t:Twit {_id: '${id_twit}'})
         MERGE (u)-[c:COMMENTS]->(t)
-        SET c.date = datetime("2023-06-07T08:00:00")
+        SET c.date = datetime("${dateString}")
         SET c.content = "${content}"
+    `
+
+    const notificationQuery = `
+        MATCH (liker:User {_id: "${id_user}"}), (twit:Twit {_id: "${id_twit}"}), (owner:User)-[:POSTED]->(twit)
+        MERGE (notification:Notification {_id: apoc.create.uuid(), content: liker.user_name + " comento tu publicacion", checked: false})
+        WITH notification
+        MERGE (notification)-[:NOTIFIED_TO]->(owner)
+        RETURN notification
     `
 
     // Run query
     sessionNeo4J.run(query)
+        .then(() => {
+            return sessionNeo4J.run(notificationQuery);
+        })
         .then(result => {
-            res.status(200).json({ message: 'Follow relationship created' });
+            res.status(200).json({ message: 'Twit Commented' });
         })
         .catch(error => {
-            console.error('Error creating follow relationship:', error);
+            console.error('Error creating comment and notification:', error);
             res.status(500).json({ error: 'An error occurred' });
-        });
+        })
 })
 
 module.exports = {

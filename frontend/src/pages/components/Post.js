@@ -24,14 +24,7 @@ const addComment = async (post_id, user_comment) => {
 }
 
 const Post = ({ user_connected, post }) => {
-    const [user, setUser] = useState(null)
     const [comment, setComment] = useState('')
-
-    useEffect(() => {
-        fetch(`http://localhost:8000/api/users/${post.user_name_id}`)
-            .then((response) => response.json())
-            .then((result) => setUser(result))
-    })
 
     const handleNewComment = async (event) => {
         if (event) {
@@ -73,17 +66,17 @@ const Post = ({ user_connected, post }) => {
                 boxShadow={'5px 5px 10px  #ccc'}
                 sx={{ ':hover': { boxShadow: '15px 15px 30px  #ccc' } }}
             >
-                <h4>{`${post.date}`}</h4>
-                <h3>{user !== null && user.user_name}</h3>
+                <h4>{post.date}</h4>
+                <h3>{post.user_name}</h3>
                 <h2>{post.title}</h2>
                 <p>{post.content}</p>
 
-                <br></br>
+                {/* <br></br>
                 {post.tags.length !== 0 && <h3>Tags{':'}</h3>}
                 {post.tags.map((tag) => (
                     <p>{tag}</p>
                 ))}
-                <br></br>
+                <br></br> */}
 
                 <TextField
                     id="outlined-multiline-static"
@@ -111,7 +104,7 @@ const Post = ({ user_connected, post }) => {
                     Comentar
                 </Button>
 
-                <br></br>
+                {/* <br></br>
                 {post.comments.length !== 0 && <h3>Comentarios{':'}</h3>}
                 <br></br>
                 {post.comments.map((comment) => (
@@ -120,7 +113,7 @@ const Post = ({ user_connected, post }) => {
                         <p>{comment.comment}</p>
                         <br></br>
                     </div>
-                ))}
+                ))} */}
             </Box>
         </div>
     )

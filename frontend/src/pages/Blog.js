@@ -6,13 +6,17 @@ import { Box, TextField, Fab } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import NavigationIcon from '@mui/icons-material/Navigation'
 
-const createPost = async (data) => {
-    return fetch('http://localhost:8000/api/posts', {
+const createPost = async (id, data) => {
+    return fetch(`http://localhost:8000/api/twits/${id}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
         },
         body: JSON.stringify(data),
+        withCredentials: true,
+        crossorigin: true,
+        mode: 'cors',
     })
         .then((response) => response.json())
         .then((result) => {
@@ -41,7 +45,7 @@ const Blog = ({ user }) => {
     }
 
     useEffect(() => {
-        fetch('http://localhost:8000/api/posts/in-order')
+        fetch('http://localhost:8000/api/twits/')
             .then((response) => response.json())
             .then((result) => setPosts(result))
     })
@@ -50,14 +54,13 @@ const Blog = ({ user }) => {
         if (event) {
             event.preventDefault()
         }
-        const result = await createPost({
-            user_name_id: newPost.user_name_id,
+        const result = await createPost(user._id, {
             title: newPost.title,
             content: newPost.content,
-            tags: tags,
         })
-        if (!result.success) {
-            alert('No se creo el post')
+        console.log(result)
+        if (!result.message) {
+            alert('No se creo el post' + result.error)
             return
         }
         setNewPost({

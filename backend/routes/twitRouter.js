@@ -12,7 +12,7 @@ const {
 router.get('/', showRecenTwits)
 router.get('/:id', getTwit)
 router.post('/:id', createNewTwit)
-router.post('/like/', likedTwit)
-router.post('/comment/', commentTwit)
+router.post('/action/like', likedTwit)
+router.post('/action/comment', commentTwit)
 
 module.exports = router
